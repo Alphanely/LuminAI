@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Lumina AI — Your AI Turn.</title>
+<meta name="description" content="AI assessment, upskilling, and agent deployment for enterprises ready to act."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --void:#050A15;--navy:#0B1E4D;--navy2:#173044;
+  --orange:#E8762E;--teal:#0E8A93;
+  --ink:#E8EDF8;--muted:rgba(232,237,248,.55);
+  --card:rgba(232,237,248,.05);--border:rgba(232,237,248,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+
+/* ── Nav ─────────────────────────────── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;display:flex;align-items:center;
+  padding:0 clamp(1.25rem,5vw,5rem);
+  background:linear-gradient(to bottom,rgba(5,10,21,.9) 0%,rgba(5,10,21,0) 100%);
+  backdrop-filter:blur(6px)}
+.nav__inner{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1280px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:.45rem;font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:-.025em}
+.logo__dot{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange)}
+.nav__links{display:flex;gap:2rem;list-style:none}
+.nav__links a{font-size:.875rem;font-weight:500;color:var(--muted);transition:color .18s}
+.nav__links a:hover{color:var(--ink)}
+.nav__cta{font-size:.8rem;font-weight:600;color:#fff;background:var(--orange);padding:.5rem 1.1rem;transition:opacity .18s}
+.nav__cta:hover{opacity:.86}
+
+/* ── Hero scroll journey ─────────────── */
+.journey{position:relative}
+.journey__stage{position:sticky;top:0;height:100dvh;overflow:hidden}
+#bg-canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* chapter overlay */
+.journey__story{position:relative;margin-top:-100dvh;pointer-events:none}
+.chapter{min-height:160dvh;display:flex;align-items:center;pointer-events:none}
+.chapter:first-child{min-height:180dvh}
+.chapter:last-child{min-height:180dvh}
+.chapter__pin{position:sticky;top:0;height:100dvh;display:flex;align-items:center;
+  padding:clamp(5rem,9vw,8rem) clamp(1.25rem,6vw,6rem);width:100%;pointer-events:auto}
+.chapter[data-align="right"] .chapter__pin{justify-content:flex-end}
+.chapter__copy{position:relative;width:min(40rem,48vw)}
+.chapter__copy::before{content:'';position:absolute;z-index:-1;inset:-3rem -5rem;
+  background:radial-gradient(ellipse at center,rgba(5,10,21,.9) 0%,rgba(5,10,21,.55) 52%,transparent 76%);
+  pointer-events:none}
+.chapter__kicker{font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin-bottom:1rem;display:block}
+.chapter__title{font-family:'Space Grotesk',sans-serif;font-size:clamp(2.6rem,5.5vw,6rem);
+  font-weight:700;letter-spacing:-.045em;line-height:.96;color:var(--ink);max-width:13ch;text-wrap:balance}
+.chapter__body{margin-top:1.4rem;font-size:clamp(.95rem,1.25vw,1.15rem);line-height:1.6;color:var(--muted);max-width:42ch}
+.chapter__tags{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.25rem;list-style:none}
+.chapter__tags li{padding:.4rem .7rem;border:1px solid rgba(232,237,248,.2);font-size:.8rem;color:var(--ink)}
+.chapter__actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1.75rem}
+
+/* progress bar */
+.journey__progress{position:fixed;top:0;left:0;right:0;z-index:99;height:2px;
+  background:rgba(232,237,248,.1);pointer-events:none}
+.journey__progress span{display:block;height:100%;background:var(--orange);width:0;transition:width .1s linear}
+
+/* nav dots */
+.journey__nav{position:fixed;right:2rem;top:50%;transform:translateY(-50%);z-index:99;
+  display:flex;flex-direction:column;gap:.75rem}
+.journey__nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(232,237,248,.25);
+  cursor:pointer;transition:all .2s;border:none;padding:0}
+.journey__nav-dot.active{background:var(--orange);box-shadow:0 0 8px var(--orange)}
+
+/* scroll hint */
+.scroll-hint{position:fixed;bottom:2.25rem;left:50%;transform:translateX(-50%);
+  z-index:90;display:flex;flex-direction:column;align-items:center;gap:.55rem;
+  color:var(--muted);font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  pointer-events:none;animation:hint-in 1s ease-out 1.5s both,hint-out .8s ease-in 5.5s both}
+.scroll-hint__arr{width:16px;height:10px;position:relative;animation:arr-bob 1.3s ease-in-out infinite}
+.scroll-hint__arr::before,.scroll-hint__arr::after{content:'';position:absolute;width:8px;height:1.5px;background:currentColor}
+.scroll-hint__arr::before{left:0;top:3px;transform:rotate(45deg);transform-origin:right center}
+.scroll-hint__arr::after{right:0;top:3px;transform:rotate(-45deg);transform-origin:left center}
+@keyframes hint-in{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes hint-out{from{opacity:1}to{opacity:0}}
+@keyframes arr-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+
+/* ── Buttons ─────────────────────────── */
+.btn-primary{display:inline-flex;align-items:center;gap:.5rem;font-family:'Inter',sans-serif;
+  font-size:.875rem;font-weight:600;color:#fff;background:var(--orange);border:1px solid var(--orange);
+  padding:.72rem 1.6rem;transition:opacity .18s;cursor:pointer}
+.btn-primary:hover{opacity:.86}
+.btn-ghost{display:inline-flex;align-items:center;gap:.5rem;font-family:'Inter',sans-serif;
+  font-size:.875rem;font-weight:500;color:var(--ink);background:transparent;border:1px solid var(--border);
+  padding:.72rem 1.6rem;transition:border-color .18s;cursor:pointer}
+.btn-ghost:hover{border-color:rgba(232,237,248,.35)}
+
+/* ── Shared sections ─────────────────── */
+.section{padding:clamp(4.5rem,9vw,8rem) clamp(1.25rem,6vw,6rem);max-width:1280px;margin:0 auto}
+.section__kicker{font-size:.75rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin-bottom:1.1rem;display:block}
+.section__heading{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.9rem,3.8vw,3.25rem);
+  font-weight:700;letter-spacing:-.04em;line-height:1.02;color:var(--ink);max-width:20ch;text-wrap:balance;margin-bottom:.9rem}
+.section__sub{font-size:clamp(.95rem,1.2vw,1.08rem);line-height:1.65;color:var(--muted);max-width:52ch;margin-bottom:3rem}
+
+/* ── Services ────────────────────────── */
+.services{background:var(--void);border-top:1px solid var(--border)}
+.svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5px}
+.svc-card{background:var(--card);border:1px solid var(--border);padding:2.5rem 2rem;position:relative;overflow:hidden;transition:border-color .2s}
+.svc-card:hover{border-color:rgba(232,118,46,.3)}
+.svc-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(232,118,46,.04) 0%,transparent 55%);pointer-events:none}
+.svc-num{font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:1.75rem;display:block}
+.svc-icon{width:44px;height:44px;margin-bottom:1.25rem;display:block}
+.svc-title{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;letter-spacing:-.03em;color:var(--ink);margin-bottom:.85rem}
+.svc-body{font-size:.9rem;line-height:1.68;color:var(--muted)}
+
+/* ── Methodology ─────────────────────── */
+.methodology{background:linear-gradient(to bottom,var(--void) 0%,var(--navy) 100%);border-top:1px solid var(--border)}
+.phases{display:flex;flex-direction:column}
+.phase{display:grid;grid-template-columns:3rem 1fr;gap:2rem;padding:1.75rem 0}
+.phase+.phase{border-top:1px solid var(--border)}
+.phase__step{display:flex;flex-direction:column;align-items:center;padding-top:.15rem}
+.phase__badge{width:2.25rem;height:2.25rem;border-radius:50%;background:var(--orange);color:#fff;
+  font-family:'Space Grotesk',sans-serif;font-size:.7rem;font-weight:700;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px rgba(232,118,46,.4)}
+.phase:nth-child(even) .phase__badge{background:var(--teal);box-shadow:0 0 16px rgba(14,138,147,.4)}
+.phase__line{flex:1;width:1px;background:var(--border);margin-top:.5rem;min-height:1.5rem}
+.phase:last-child .phase__line{display:none}
+.phase__label{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:.3rem}
+.phase:nth-child(even) .phase__label{color:var(--teal)}
+.phase__title{font-family:'Space Grotesk',sans-serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.3rem;letter-spacing:-.02em}
+.phase__duration{font-size:.78rem;font-weight:500;color:var(--muted);margin-bottom:.55rem}
+.phase__body{font-size:.875rem;line-height:1.65;color:var(--muted);max-width:52ch}
+
+/* ── Why ─────────────────────────────── */
+.why{background:var(--navy);border-top:1px solid var(--border)}
+.proof-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem}
+.proof-item{padding:1.75rem;background:var(--card);border:1px solid var(--border);transition:border-color .2s}
+.proof-item:hover{border-color:rgba(14,138,147,.3)}
+.proof-title{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:.55rem;letter-spacing:-.02em}
+.proof-body{font-size:.875rem;line-height:1.65;color:var(--muted)}
+
+/* ── Sectors ─────────────────────────── */
+.sectors{background:var(--void);border-top:1px solid var(--border)}
+.sector-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.sector-tag{padding:.9rem 1.25rem;border:1px solid var(--border);font-size:.875rem;font-weight:500;color:var(--muted);transition:all .2s}
+.sector-tag:hover{border-color:rgba(232,118,46,.3);color:var(--ink);background:rgba(232,118,46,.04)}
+
+/* ── Contact ─────────────────────────── */
+.contact{background:linear-gradient(135deg,var(--navy) 0%,var(--void) 100%);border-top:1px solid var(--border);text-align:center}
+.contact .section__heading{margin-left:auto;margin-right:auto;max-width:16ch}
+.contact .section__sub{margin-left:auto;margin-right:auto}
+.cta-group{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+/* ── Footer ──────────────────────────── */
+.footer{background:var(--navy);border-top:1px solid var(--border);padding:2.25rem clamp(1.25rem,6vw,6rem)}
+.footer__inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.footer__copy{font-size:.82rem;color:var(--muted)}
+.footer__tagline{font-family:'Space Grotesk',sans-serif;font-size:.875rem;font-weight:700;color:var(--orange);letter-spacing:-.02em}
+
+/* ── Responsive ──────────────────────── */
+@media(max-width:860px){
+  .nav__links{display:none}
+  .chapter__copy{width:min(100%,36rem)}
+  .chapter__copy::before{inset:-3rem -2rem;background:linear-gradient(to top,var(--void) 0%,rgba(5,10,21,.82) 58%,transparent 100%)}
+  .chapter__title{font-size:clamp(2.3rem,11vw,4.5rem)}
+  .chapter[data-align="right"] .chapter__pin{justify-content:flex-start}
+  .svc-grid{grid-template-columns:1fr;gap:1px}
+  .proof-grid{grid-template-columns:1fr}
+  .sector-grid{grid-template-columns:repeat(2,1fr)}
+  .journey__nav{display:none}
+}
+@media(max-width:480px){
+  .sector-grid{grid-template-columns:1fr}
+  .cta-group{flex-direction:column;align-items:center}
+}
+@media(prefers-reduced-motion:reduce){
+  .scroll-hint{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="logo" href="#">
+      Lumina AI
+      <span class="logo__dot" aria-hidden="true"></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <ul class="nav__links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#methodology">Methodology</a></li>
+        <li><a href="#why">Why Lumina</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+    <a class="nav__cta" href="#contact">Start assessment</a>
+  </div>
+</header>
+
+<!-- Journey progress bar -->
+<div class="journey__progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+<!-- Nav dots -->
+<nav class="journey__nav" aria-label="Scroll chapters" id="journey-dots"></nav>
+
+<!-- Scroll hint -->
+<div class="scroll-hint" aria-hidden="true">
+  <span>Scroll</span>
+  <span class="scroll-hint__arr"></span>
+</div>
+
+<!-- Journey: sticky canvas + scroll chapters -->
+<div class="journey">
+  <div class="journey__stage">
+    <canvas id="bg-canvas"></canvas>
+  </div>
+  <div class="journey__story" id="journey-story">
+
+    <!-- Chapter 1: Signal -->
+    <div class="chapter" data-chapter="0">
+      <div class="chapter__pin">
+        <div class="chapter__copy">
+          <span class="chapter__kicker">AI Upskilling &amp; Deployment</span>
+          <h1 class="chapter__title">Your AI turn.</h1>
+          <p class="chapter__body">AI readiness is not a destination. It's a practice.</p>
+          <div class="chapter__actions">
+            <a class="btn-primary" href="#contact">Start your assessment</a>
+            <a class="btn-ghost" href="#services">See how it works</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapter 2: Assess -->
+    <div class="chapter" data-chapter="1">
+      <div class="chapter__pin">
+        <div class="chapter__copy">
+          <span class="chapter__kicker">Step 01</span>
+          <h2 class="chapter__title">Diagnose your readiness.</h2>
+          <p class="chapter__body">We map where your people and processes stand today — before you spend a euro on tools.</p>
+          <ul class="chapter__tags"><li>AI Assessment</li></ul>
+          <div class="chapter__actions">
+            <a class="btn-ghost" href="#services">See the Assessment</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapter 3: Equip -->
+    <div class="chapter" data-align="right" data-chapter="2">
+      <div class="chapter__pin">
+        <div class="chapter__copy">
+          <span class="chapter__kicker">Step 02</span>
+          <h2 class="chapter__title">Equip your people.</h2>
+          <p class="chapter__body">Structured learning paths, live workshops, and cohort accountability — built around your actual use cases.</p>
+          <ul class="chapter__tags"><li>AI Upskilling</li></ul>
+          <div class="chapter__actions">
+            <a class="btn-ghost" href="#services">Explore Upskilling</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapter 4: Deploy -->
+    <div class="chapter" data-chapter="3">
+      <div class="chapter__pin">
+        <div class="chapter__copy">
+          <span class="chapter__kicker">Step 03</span>
+          <h2 class="chapter__title">Deploy AI that works.</h2>
+          <p class="chapter__body">Purpose-built agents that replace real manual workflows — not demo-ware. Scoped, validated, and handed off.</p>
+          <ul class="chapter__tags"><li>AI Agents</li></ul>
+          <div class="chapter__actions">
+            <a class="btn-ghost" href="#services">See AI Agents</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chapter 5: Start -->
+    <div class="chapter" data-align="right" data-chapter="4">
+      <div class="chapter__pin">
+        <div class="chapter__copy">
+          <h2 class="chapter__title">Start your AI turn.</h2>
+          <p class="chapter__body">Most companies stall at the strategy phase. You don't have to.</p>
+          <div class="chapter__actions">
+            <a class="btn-primary" href="#contact">Start your assessment</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /journey__story -->
+</div><!-- /journey -->
+
+<!-- ── Services ── -->
+<section id="services" class="services">
+  <div class="section">
+    <span class="section__kicker">Three services. One outcome.</span>
+    <h2 class="section__heading">AI readiness, end to end.</h2>
+    <p class="section__sub">Each service stands alone and compounds when combined — assess, equip, deploy, in any order your organisation needs.</p>
+    <div class="svc-grid">
+      <div class="svc-card">
+        <span class="svc-num">01</span>
+        <svg class="svc-icon" fill="none" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="22" cy="22" r="18" stroke="#E8762E" stroke-width="1.25"/>
+          <path d="M14 22h5M25 22h5M22 14v5M22 25v5" stroke="#0E8A93" stroke-linecap="round" stroke-width="1.25"/>
+          <circle cx="22" cy="22" r="3" fill="#E8762E"/>
+        </svg>
+        <h3 class="svc-title">AI Assessment</h3>
+        <p class="svc-body">Understand where your organisation stands. We audit AI literacy, tool adoption, and workflow gaps to build a clear starting point.</p>
+      </div>
+      <div class="svc-card">
+        <span class="svc-num">02</span>
+        <svg class="svc-icon" fill="none" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <rect x="7" y="11" width="30" height="22" rx="2" stroke="#E8762E" stroke-width="1.25"/>
+          <path d="M14 18h16M14 26h10" stroke="#0E8A93" stroke-linecap="round" stroke-width="1.25"/>
+        </svg>
+        <h3 class="svc-title">AI Upskilling</h3>
+        <p class="svc-body">Role-specific learning journeys for your teams. From prompt engineering to workflow automation — skills that stick.</p>
+      </div>
+      <div class="svc-card">
+        <span class="svc-num">03</span>
+        <svg class="svc-icon" fill="none" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 7l3.5 7.5H33l-5.5 4.5 2 7.5L22 22l-7.5 4.5 2-7.5L11 14.5h7.5L22 7z" stroke="#E8762E" stroke-linejoin="round" stroke-width="1.25"/>
+          <circle cx="22" cy="36" r="2.5" fill="#0E8A93"/>
+          <path d="M22 30v3.5" stroke="#0E8A93" stroke-linecap="round" stroke-width="1.25"/>
+        </svg>
+        <h3 class="svc-title">AI Agents</h3>
+        <p class="svc-body">Custom agents built for your real processes. We scope, build, validate, and hand off — with full documentation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Methodology ── -->
+<section id="methodology" class="methodology">
+  <div class="section">
+    <span class="section__kicker">How we work</span>
+    <h2 class="section__heading">Six to ten weeks to AI readiness.</h2>
+    <p class="section__sub">A practitioner-led methodology that moves fast without cutting corners.</p>
+    <div class="phases">
+      <div class="phase">
+        <div class="phase__step"><div class="phase__badge">01</div><div class="phase__line"></div></div>
+        <div><p class="phase__label">Phase 01</p><h3 class="phase__title">AI Assessment</h3><p class="phase__duration">~1 week</p><p class="phase__body">Literacy audit, tool inventory, and workflow gap mapping to build a clear baseline.</p></div>
+      </div>
+      <div class="phase">
+        <div class="phase__step"><div class="phase__badge">02</div><div class="phase__line"></div></div>
+        <div><p class="phase__label">Phase 02</p><h3 class="phase__title">Strategy &amp; Design</h3><p class="phase__duration">1–2 weeks</p><p class="phase__body">Learning journey design, agent scoping, and a prioritised AI roadmap.</p></div>
+      </div>
+      <div class="phase">
+        <div class="phase__step"><div class="phase__badge">03</div><div class="phase__line"></div></div>
+        <div><p class="phase__label">Phase 03</p><h3 class="phase__title">Upskilling Delivery</h3><p class="phase__duration">2–3 weeks</p><p class="phase__body">Live sessions, async paths, and cohort check-ins built around real use cases.</p></div>
+      </div>
+      <div class="phase">
+        <div class="phase__step"><div class="phase__badge">04</div><div class="phase__line"></div></div>
+        <div><p class="phase__label">Phase 04</p><h3 class="phase__title">Agent Development</h3><p class="phase__duration">2–3 weeks</p><p class="phase__body">Scoped, built, tested, and validated against real workflows — not demo-ware.</p></div>
+      </div>
+      <div class="phase">
+        <div class="phase__step"><div class="phase__badge">05</div></div>
+        <div><p class="phase__label">Phase 05</p><h3 class="phase__title">Handoff &amp; Embedding</h3><p class="phase__duration">~1 week</p><p class="phase__body">Full documentation, internal champion training, and governance guidelines.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Why Lumina ── -->
+<section id="why" class="why">
+  <div class="section">
+    <span class="section__kicker">Why Lumina AI</span>
+    <h2 class="section__heading">Practitioners, not consultants.</h2>
+    <p class="section__sub">We implement AI in real enterprise workflows — and we're still doing it. Every service we sell, we've tested ourselves.</p>
+    <div class="proof-grid">
+      <div class="proof-item"><h3 class="proof-title">EU AI Act ready</h3><p class="proof-body">Article 4 compliance-aligned training from day one — an obligation since February 2025.</p></div>
+      <div class="proof-item"><h3 class="proof-title">End-to-end</h3><p class="proof-body">Assess → Train → Deploy in one engagement or across multiple focused sprints.</p></div>
+      <div class="proof-item"><h3 class="proof-title">Global footprint</h3><p class="proof-body">Active in Europe, Central Africa, and West Africa. Fluent in French and English.</p></div>
+      <div class="proof-item"><h3 class="proof-title">Practitioners</h3><p class="proof-body">We deploy AI in enterprise workflows ourselves. Every service we sell, we've run.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Sectors ── -->
+<section class="sectors">
+  <div class="section">
+    <span class="section__kicker">Sectors we serve</span>
+    <h2 class="section__heading">Built for enterprise teams.</h2>
+    <div class="sector-grid">
+      <div class="sector-tag">Financial Services</div>
+      <div class="sector-tag">Manufacturing</div>
+      <div class="sector-tag">Energy &amp; Resources</div>
+      <div class="sector-tag">Retail &amp; Consumer</div>
+      <div class="sector-tag">Professional Services</div>
+      <div class="sector-tag">Public Sector</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Contact ── -->
+<section id="contact" class="contact">
+  <div class="section">
+    <span class="section__kicker">Get started</span>
+    <h2 class="section__heading">Ready for your AI turn?</h2>
+    <p class="section__sub">Most organisations know they need to move on AI. What they lack is a clear starting point. That's what the assessment gives you — in one week.</p>
+    <div class="cta-group">
+      <a class="btn-primary" href="mailto:contact@lumina-ai.global">Book a free call</a>
+      <a class="btn-ghost" href="#services">See our services</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="footer__inner">
+    <span class="footer__copy">© 2026 Lumina AI · contact@lumina-ai.global</span>
+    <span class="footer__tagline">Your AI turn.</span>
+  </div>
+</footer>
+
+<script>
+/* ─────────────────────────────────────────────────────────
+   Three.js neural lattice background
+───────────────────────────────────────────────────────── */
+(function(){
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+  camera.position.set(0, 0, 28);
+
+  // Nodes
+  const NODE_COUNT = 90;
+  const positions = [], nodeGeo = new THREE.SphereGeometry(.12,8,8);
+  const nodeMat = new THREE.MeshBasicMaterial({color:0xE8762E});
+  const nodeMat2 = new THREE.MeshBasicMaterial({color:0x0E8A93});
+  const nodeGroup = new THREE.Group();
+  scene.add(nodeGroup);
+
+  for(let i=0;i<NODE_COUNT;i++){
+    const r = 10 + Math.random()*6;
+    const theta = Math.random()*Math.PI*2;
+    const phi = Math.acos(2*Math.random()-1);
+    const x = r*Math.sin(phi)*Math.cos(theta);
+    const y = r*Math.sin(phi)*Math.sin(theta);
+    const z = r*Math.cos(phi);
+    positions.push(new THREE.Vector3(x,y,z));
+    const m = i%5===0 ? new THREE.Mesh(nodeGeo, nodeMat2) : new THREE.Mesh(nodeGeo, nodeMat);
+    m.position.set(x,y,z);
+    nodeGroup.add(m);
+  }
+
+  // Edges
+  const edgeGeo = new THREE.BufferGeometry();
+  const edgeVerts = [];
+  const MAX_DIST = 7;
+  for(let i=0;i<NODE_COUNT;i++){
+    for(let j=i+1;j<NODE_COUNT;j++){
+      if(positions[i].distanceTo(positions[j]) < MAX_DIST){
+        edgeVerts.push(positions[i].x,positions[i].y,positions[i].z);
+        edgeVerts.push(positions[j].x,positions[j].y,positions[j].z);
+      }
+    }
+  }
+  edgeGeo.setAttribute('position', new THREE.Float32BufferAttribute(edgeVerts,3));
+  const edgeMat = new THREE.LineBasicMaterial({color:0x0E8A93, opacity:.18, transparent:true});
+  scene.add(new THREE.LineSegments(edgeGeo, edgeMat));
+
+  // Central glow sphere
+  const glowGeo = new THREE.SphereGeometry(3,32,32);
+  const glowMat = new THREE.MeshBasicMaterial({color:0xE8762E, opacity:.04, transparent:true, wireframe:false});
+  scene.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // Resize
+  function resize(){
+    const w=canvas.clientWidth, h=canvas.clientHeight;
+    renderer.setSize(w,h,false);
+    camera.aspect=w/h;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(canvas);
+  resize();
+
+  // Scroll-driven camera state
+  const chapters = document.querySelectorAll('.chapter');
+  const journeyStory = document.getElementById('journey-story');
+  let scrollProgress = 0; // 0..1 across full journey
+
+  // Camera positions per chapter
+  const camStates = [
+    {z:28, rx:0,  ry:0},
+    {z:22, rx:.15, ry:.2},
+    {z:16, rx:-.1, ry:-.25},
+    {z:11, rx:.2,  ry:.3},
+    {z:7,  rx:0,  ry:0},
+  ];
+
+  let mouseX=0, mouseY=0;
+  window.addEventListener('mousemove',e=>{
+    mouseX=(e.clientX/window.innerWidth-.5)*.6;
+    mouseY=(e.clientY/window.innerHeight-.5)*.4;
+  });
+
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t+=.004;
+    nodeGroup.rotation.y = t*.08 + mouseX*.12;
+    nodeGroup.rotation.x = mouseY*.08;
+
+    // Lerp camera Z based on scroll progress
+    const n = camStates.length-1;
+    const idx = Math.min(scrollProgress * n, n-.001);
+    const lo = camStates[Math.floor(idx)];
+    const hi = camStates[Math.ceil(idx)];
+    const f = idx - Math.floor(idx);
+    camera.position.z = lo.z + (hi.z-lo.z)*f;
+    camera.rotation.x = lo.rx + (hi.rx-lo.rx)*f;
+    camera.rotation.y = lo.ry + (hi.ry-lo.ry)*f;
+
+    renderer.render(scene,camera);
+  }
+  animate();
+
+  /* ─────────────────────────────────────────────────────────
+     Scroll progress + chapter tracking
+  ───────────────────────────────────────────────────────── */
+  const progressBar = document.getElementById('progress-bar');
+  const dotsContainer = document.getElementById('journey-dots');
+  const CHAPTER_LABELS = ['Signal','Assess','Equip','Deploy','Start'];
+
+  // Build nav dots
+  CHAPTER_LABELS.forEach((label,i)=>{
+    const btn = document.createElement('button');
+    btn.className='journey__nav-dot';
+    btn.setAttribute('aria-label', label);
+    btn.setAttribute('title', label);
+    btn.addEventListener('click',()=>scrollToChapter(i));
+    dotsContainer.appendChild(btn);
+  });
+  const dots = dotsContainer.querySelectorAll('.journey__nav-dot');
+
+  function scrollToChapter(index){
+    const ch = chapters[index];
+    if(!ch) return;
+    const top = journeyStory.getBoundingClientRect().top + window.scrollY
+               + ch.offsetTop;
+    window.scrollTo({top: top + ch.offsetHeight*.15, behavior:'smooth'});
+  }
+
+  let activeChapter = -1;
+
+  function onScroll(){
+    const storyTop = journeyStory.getBoundingClientRect().top + window.scrollY;
+    const storyH = journeyStory.offsetHeight;
+    const y = window.scrollY - storyTop;
+    scrollProgress = Math.max(0, Math.min(1, y / (storyH - window.innerHeight)));
+    if(progressBar) progressBar.style.width = (scrollProgress*100)+'%';
+
+    // Active chapter
+    let active = 0;
+    chapters.forEach((ch,i)=>{
+      const r = ch.getBoundingClientRect();
+      if(r.top < window.innerHeight*.6) active=i;
+    });
+    if(active !== activeChapter){
+      activeChapter = active;
+      dots.forEach((d,i)=>d.classList.toggle('active', i===active));
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+})();
+</script>
+</body>
+</html>
